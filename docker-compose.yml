@@ -1,0 +1,93 @@
+version: '3'
+services:
+  # PHP Service
+  app:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    image: digitalocean.com/php
+    container_name: plasma_focus_php
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - app-network
+    ports:
+      - "9000:9000"
+
+  # Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: plasma_focus_web
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - app-network
+
+  # MySQL Service
+  db:
+    image: mysql:5.7.22
+    container_name: plasma_focus_db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: your_mysql_root_password
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql/
+      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - app-network
+
+  # Redis Service
+  redis:
+    image: redis:6.0.10
+    container_name: plasma_focus_redis
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  # Container for laravel-echo-server - community socket.io implementation
+  websocket:
+    image: node:14
+    container_name: websocket
+    command: start
+    entrypoint: ["npm", "run", "websocket"]
+    restart: unless-stopped
+    ports:
+      - "6001:6001"
+    tty: true
+    working_dir: /app
+    volumes:
+      - ./docker/websocket:/app:z
+    networks:
+      - app-network
+
+# Docker Networks
+networks:
+  app-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  dbdata:
+    driver: local

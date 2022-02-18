@@ -1,0 +1,9 @@
+{
+    "scripts": {
+        "websocket": "node server.js"
+    },
+    "dependencies": {
+        "dotenv": "^10.0.0",
+        "laravel-echo-server": "^1.6.2"
+    }
+}
